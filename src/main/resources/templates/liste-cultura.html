@@ -121,8 +121,8 @@
     </header>
 
     <section class="white-bg">
-        <div class="" data-masonry-cols="4">
-            <li th:each="s : ${salle}" th:text="${s.name}"><a href="${s.link}"></a></li>
+        <div class="" data-masonry-cols="4" align="center">
+            <li th:each="s : ${salle}" ><a  target="_blank" th:href="@{'https://' + ${s.getSite_web}}" th:text="${s.getName}"></a></li>
         </div>
     </section>
 
