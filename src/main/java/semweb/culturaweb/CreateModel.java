@@ -21,15 +21,14 @@ public class CreateModel {
     public static RDFConnection accessor = RDFConnectionFactory.connect(sparqlEndpoint, sparqlUpdate, graphStore);
 
     public static void main(String[] args) throws IOException {
-        Model modelSalleSpectacle = modelSalleSpectacle();
-        sendOntologyToFuseki(accessor, modelSalleSpectacle);
-        //List<Literal> listname = findName();
+        sendOntologyToFuseki(accessor, modelSalleSpectacle(),"src/main/resources/theatres-et-salles-de-spectacles.ttl");
+        sendOntologyToFuseki(accessor, modelCinema(),"src/main/resources/Liste_Cinema_2019.ttl");
     }
 
-    public static void sendOntologyToFuseki(RDFConnection accessor, Model model) {
+    public static void sendOntologyToFuseki(RDFConnection accessor, Model model, String File) {
         if (accessor != null) {
             try {
-                model.read(new FileInputStream("/home/sinama/Documents/M2/Web sementique/theater_salle_spectacle.ttl"), null, "TURTLE");
+                model.read(new FileInputStream(File), null, "TURTLE");
                 accessor.load(model);
             } catch (Exception e) {
                 System.out.println("error");
@@ -39,10 +38,9 @@ public class CreateModel {
 
     public static Model modelSalleSpectacle() throws IOException {
         int i = 0;
-
         String geo_point, nom_equipement, gestionnaire, telephone, site_web, id_secteur_postal, ville, secteur, quartier, jauge_salle_de_spectacle, oid;
 
-        BufferedReader in = new BufferedReader(new FileReader("/home/sinama/Documents/M2/Web sementique/theatres-et-salles-de-spectacles.txt"));
+        BufferedReader in = new BufferedReader(new FileReader("src/main/resources/theatres-et-salles-de-spectacles.txt"));
         String line;
         String ex = "http://example.org/";
         String geo = "http://www.w3.org/2003/01/geo/wgs84_pos#";
@@ -57,7 +55,7 @@ public class CreateModel {
         model.setNsPrefix("rdfs", rdfs);
         model.setNsPrefix("foaf", foaf);
         model.setNsPrefix("vcard", vcard);
-//Geo Point;Geo Shape;nom_equipement;gestionnaire;telephone;site_web;acces_metro;acces_bus;x;y;numero;lib_off;id_secteur_postal;ville;secteur;quartier;jauge_salle_de_spectacle;oid
+
         while ((line = in.readLine()) != null) {
             if (i > 0) {
                 // Recuperation des informations
@@ -87,7 +85,7 @@ public class CreateModel {
             }
             i++;
             try {
-                model.write(new FileOutputStream("/home/sinama/Documents/M2/Web sementique/theater_salle_spectacle.ttl"), "TURTLE");
+                model.write(new FileOutputStream("src/main/resources/theater_salle_spectacle.ttl"), "TURTLE");
             } catch (Exception e) {
                 System.out.println("error");
             }
@@ -96,7 +94,64 @@ public class CreateModel {
         return model;
     }
 
-    public static List<SalleSpectacle> findAll() {
+    public static Model modelCinema() throws IOException {
+        BufferedReader in;
+        String line;
+
+        String NumAuto,NomEtab, Ecrans, Fauteuils, CodeCommune, Commune, Ecran3D;
+        String ex = "http://example.org/";
+        String geo = "http://www.w3.org/2003/01/geo/wgs84_pos#";
+        String xsd = "http://www.w3.org/2001/XMLSchema#";
+        String rdfs = "http://www.w3.org/2000/01/rdf-schema#";
+        Model model = ModelFactory.createDefaultModel();
+
+        model.setNsPrefix("ex", ex);
+        model.setNsPrefix("geo", geo);
+        model.setNsPrefix("xsd", xsd);
+        model.setNsPrefix("rdfs", rdfs);
+
+        in = new BufferedReader(new FileReader("src/main/resources/Liste_Cinema_2019.csv"));
+
+        while ((line = in.readLine()) != null )
+        {
+            String[] words = line.split(";");
+            NumAuto = words[0];
+            NomEtab= words[1];
+            Ecrans= words[2];
+            Fauteuils= words[3];
+            CodeCommune= words[4];
+            Commune= words[5];
+            Ecran3D= words[8];
+
+            Resource resourceId = model.createResource(ex + NumAuto);
+            resourceId.addProperty(RDF.type, "Cinema");
+            resourceId.addProperty(RDFS.label, NomEtab);
+
+            Property propEcrans=model.createProperty(ex+"Ecrans");
+            resourceId.addProperty(propEcrans, Ecrans);
+
+            Property propFauteuils=model.createProperty(ex+"Fauteuils");
+            resourceId.addProperty(propFauteuils, Fauteuils);
+
+            Property propEcran3d=model.createProperty(ex+"Ecran3D");
+            resourceId.addProperty(propEcran3d, Ecran3D);
+
+            Property propCodeCommune=model.createProperty(geo+"CodeCommune");
+            resourceId.addProperty(propCodeCommune, CodeCommune);
+
+            Property propCommune=model.createProperty(geo+"Commune");
+            resourceId.addProperty(propCommune, Commune,"fr");
+            try {
+                model.write(new FileOutputStream("src/main/resources/Liste_Cinema_2019.ttl"), "TURTLE");
+            } catch (Exception e) {
+                System.out.println("error");
+            }
+        }
+        in.close();
+        return model;
+    }
+
+    public static List<SalleSpectacle> findAllSalleSpectacle() {
         List<SalleSpectacle> listeSalles = new ArrayList<>();
         QueryExecution qExec = accessor.query("\n" +
                 "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
@@ -127,9 +182,39 @@ public class CreateModel {
             salleSpectacle.setGeo_point(qs.getLiteral("geolocalisation"));
             listeSalles.add(salleSpectacle);
         }
-        qExec.close();
-        accessor.close();
         System.out.println(listeSalles);
         return listeSalles;
     }
+
+    public static List<Cinema> findAllCinema() {
+        List<Cinema> listeCinema = new ArrayList<>();
+        QueryExecution qExec = accessor.query(
+                "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n" +
+                        "                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                        "                PREFIX ex: <http://example.org/>   \n" +
+                        "                SELECT DISTINCT ?name ?commune ?ecran ?ecran3D ?fauteuils\n" +
+                        "                WHERE {\n" +
+                        "                  ?subject rdfs:label ?name;\n" +
+                        "                           geo:Commune ?commune;\n" +
+                        "                           ex:Ecrans ?ecran;\n" +
+                        "                           ex:Ecran3D ?ecran3D;\n" +
+                        "                          ex:Fauteuils ?fauteuils\n" +
+                        "               \n" +
+                        "                }\n" +
+                        "                LIMIT 25");
+        ResultSet rs = qExec.execSelect();
+        while (rs.hasNext()) {
+            Cinema cinema = new Cinema();
+            QuerySolution qs = rs.next();
+            cinema.setName(qs.getLiteral("name"));
+            cinema.setType("Cinema");
+            cinema.setEcrans(qs.getLiteral("ecran"));
+            cinema.setEcran3D(qs.getLiteral("ecran3D"));
+            cinema.setFauteuils(qs.getLiteral("fauteuils"));
+            cinema.setCommune(qs.getLiteral("commune"));
+            listeCinema.add(cinema);
+        }
+        return listeCinema;
+    }
+
 }
