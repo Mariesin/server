@@ -22,7 +22,7 @@ public class CreateModel {
 
     public static void main(String[] args) throws IOException {
         Model modelSalleSpectacle = modelSalleSpectacle();
-        //sendOntologyToFuseki(accessor, modelSalleSpectacle);
+        sendOntologyToFuseki(accessor, modelSalleSpectacle);
         //List<Literal> listname = findName();
     }
 
@@ -69,25 +69,23 @@ public class CreateModel {
                 site_web = words[5];
                 id_secteur_postal = words[12];
                 ville = words[13];
-                secteur = words[14];
-                quartier = words[15];
                 jauge_salle_de_spectacle = words[16];
                 oid = words[17];
 
                 Resource resourceId = model.createResource(ex + oid);
 
-                resourceId.addProperty(FOAF.name, nom_equipement, "fr");
+                resourceId.addProperty(FOAF.name, nom_equipement);
                 resourceId.addProperty(RDFS.comment, jauge_salle_de_spectacle);
                 resourceId.addProperty(VCARD.Orgname, gestionnaire);
                 resourceId.addProperty(VCARD.TEL, telephone);
                 resourceId.addProperty(FOAF.homepage, site_web);
-                resourceId.addProperty(VCARD.ADR, ville + " secteur " +secteur + " quartier " + quartier + " " + id_secteur_postal);
+                resourceId.addProperty(VCARD.ADR, ville);
+                resourceId.addProperty(model.createProperty(ex + "secteurpostal"), id_secteur_postal);
 
                 Property propGeo = model.createProperty(geo + "Point");
                 resourceId.addProperty(propGeo, geo_point);
             }
             i++;
-            //model.write(System.out, "TURTLE");
             try {
                 model.write(new FileOutputStream("/home/sinama/Documents/M2/Web sementique/theater_salle_spectacle.ttl"), "TURTLE");
             } catch (Exception e) {
@@ -98,24 +96,40 @@ public class CreateModel {
         return model;
     }
 
-    public static List<Literal> findName() {
-        List<Literal> listeName = new ArrayList<>();
-        QueryExecution qExec = accessor.query("PREFIX foaf: <http://xmlns.com/foaf/0.1/>\r\n" +
-                "\r\n" +
-                "SELECT DISTINCT ?name \r\n" +
-                "WHERE {\r\n" +
-                "  ?subject foaf:name ?name\r\n" +
-                "}\r\n" +
+    public static List<SalleSpectacle> findAll() {
+        List<SalleSpectacle> listeSalles = new ArrayList<>();
+        QueryExecution qExec = accessor.query("\n" +
+                "PREFIX foaf: <http://xmlns.com/foaf/0.1/>\n" +
+                "PREFIX vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>\n" +
+                "PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n" +
+                "\n" +
+                "\n" +
+                "SELECT DISTINCT ?name ?link ?ville ?tel ?gestionnaire ?geolocalisation\n" +
+                "WHERE {\n" +
+                "  ?subject foaf:name ?name; \n" +
+                "           foaf:homepage ?link; \n" +
+                "           vcard:ADR ?ville;\n" +
+                "           vcard:TEL ?tel;\n" +
+                "           vcard:Orgname ?gestionnaire;\n" +
+                "           geo:Point ?geolocalisation\n" +
+                "           \n" +
+                "}\n" +
                 "LIMIT 25");
         ResultSet rs = qExec.execSelect();
         while (rs.hasNext()) {
+            SalleSpectacle salleSpectacle = new SalleSpectacle();
             QuerySolution qs = rs.next();
-            Literal subject = qs.getLiteral("name");
-            listeName.add(subject);
+            salleSpectacle.setName(qs.getLiteral("name"));
+            salleSpectacle.setSite_web(qs.getLiteral("link"));
+            salleSpectacle.setVille(qs.getLiteral("ville"));
+            salleSpectacle.setTelephone(qs.getLiteral("tel"));
+            salleSpectacle.setGestionnaire(qs.getLiteral("gestionnaire"));
+            salleSpectacle.setGeo_point(qs.getLiteral("geolocalisation"));
+            listeSalles.add(salleSpectacle);
         }
         qExec.close();
         accessor.close();
-        System.out.println(listeName);
-        return listeName;
+        System.out.println(listeSalles);
+        return listeSalles;
     }
 }
