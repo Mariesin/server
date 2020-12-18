@@ -4,7 +4,7 @@ Auteur: Marie SINAMA et Khadidja MEZIARI
 Notre projet vous fait découvrir les salles de spectales, theatres de Toulouse et les Cinema de france.
 
 
-Tout d'abord il faut ouvrir le projet sur un environnement de developpement Java ( bien verifier la version de Java 11).
+Le projet se trouve sur la branche Sinama,vous devez l'ouvrir sur un environnement de developpement Java ( bien verifier la version de Java 11).
 
 # Remplir le triplestore
 
