@@ -1,5 +1,5 @@
 # Projet Cultura
-Auteur: MARIE Sinama et MEZIARI Khadidja 
+Auteur: Marie SINAMA et Khadidja MEZIARI 
 
 Notre projet vous fait découvrir les salles de spectales, theatres de Toulouse et les Cinema de france.
 
